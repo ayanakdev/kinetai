@@ -21,7 +21,7 @@ export default function Home() {
   const [hasWarning, setHasWarning] = useState(false);
   const [dailyCount, setDailyCount] = useState(0);
   const [dailyReset, setDailyReset] = useState(0);
-  const DAILY_LIMIT = 10;
+  const DAILY_LIMIT = 5;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -100,7 +100,7 @@ export default function Home() {
     if (dailyCount >= DAILY_LIMIT) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "You've hit your 10 message limit for today. Come back tomorrow for more vibes." },
+        { role: "assistant", content: "You've hit your 5 message limit for today. Come back tomorrow for more vibes." },
       ]);
       return;
     }

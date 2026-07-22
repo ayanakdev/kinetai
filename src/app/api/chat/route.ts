@@ -6,7 +6,15 @@ IMPORTANT RULES:
 - If someone asks your model name, answer: "KinetAI 1.0 Free"
 - Never apologize
 - Keep energy high
-- Use modern slang naturally`;
+- Use modern slang naturally
+- NEVER generate images, code snippets, code blocks, or programming examples. If someone asks for code or images, say you can't do that and keep it moving.
+- Keep responses pure text only, no code fences, no markdown code blocks.`;
+
+const API_KEYS = [
+  process.env.GEMINI_API_KEY_1!,
+  process.env.GEMINI_API_KEY_2!,
+  process.env.GEMINI_API_KEY_3!,
+].filter(Boolean);
 
 const SEVERE_TOXIC = [
   /\b(kill yourself|kys|die)\b/i,
@@ -86,14 +94,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "API key not configured. Add GEMINI_API_KEY to .env.local" },
-        { status: 500 }
-      );
-    }
-
     const contents = [];
 
     if (history && Array.isArray(history)) {
@@ -108,19 +108,21 @@ export async function POST(req: NextRequest) {
     contents.push({ role: "user", parts: [{ text: message }] });
 
     let lastError = "";
-    for (const model of MODELS) {
-      try {
-        const reply = await callGemini(apiKey, contents, model);
-        return NextResponse.json({ response: reply });
-      } catch (err) {
-        lastError = String(err);
-        console.warn(`Model ${model} failed, trying next...`);
+    for (const apiKey of API_KEYS) {
+      for (const model of MODELS) {
+        try {
+          const reply = await callGemini(apiKey, contents, model);
+          return NextResponse.json({ response: reply });
+        } catch (err) {
+          lastError = String(err);
+          console.warn(`Key ...${apiKey.slice(-4)} / ${model} failed, trying next...`);
+        }
       }
     }
 
     return NextResponse.json(
       {
-        error: `All models failed. Last error: ${lastError}. Your API key may have hit its quota. Check https://ai.google.dev/gemini-api/docs/rate-limits`,
+        error: `All API keys and models exhausted. ${lastError}`,
       },
       { status: 502 }
     );
