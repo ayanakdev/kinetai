@@ -107,24 +107,27 @@ export async function POST(req: NextRequest) {
 
     contents.push({ role: "user", parts: [{ text: message }] });
 
-    let lastError = "";
-    for (const apiKey of API_KEYS) {
-      for (const model of MODELS) {
-        try {
-          const reply = await callGemini(apiKey, contents, model);
-          return NextResponse.json({ response: reply });
-        } catch (err) {
-          lastError = String(err);
-          console.warn(`Key ...${apiKey.slice(-4)} / ${model} failed, trying next...`);
+    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    for (let pass = 0; pass < 2; pass++) {
+      if (pass === 1) await delay(2000);
+      for (const apiKey of API_KEYS) {
+        for (const model of MODELS) {
+          try {
+            const reply = await callGemini(apiKey, contents, model);
+            return NextResponse.json({ response: reply });
+          } catch (err) {
+            console.warn(`Pass ${pass + 1} - Key ...${apiKey.slice(-4)} / ${model} failed`);
+          }
         }
       }
     }
 
     return NextResponse.json(
       {
-        error: `All API keys and models exhausted. ${lastError}`,
+        error: "all keys on cooldown rn, try again in a min or two. no cap.",
       },
-      { status: 502 }
+      { status: 429 }
     );
   } catch (error) {
     console.error("Chat error:", error);
